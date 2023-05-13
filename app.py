@@ -11,13 +11,16 @@ app = Flask(__name__)
 
 
 #TODO
-# Only search in titles and abstracts
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
 
 def fetch_papers(fromdate, todate, search_term): # allow composable search terms
-    search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    # search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    search_query_ti = 'ti:' + '+OR+ti:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    search_query_abs = '+OR+abs:' + '+OR+abs:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    search_query = search_query_ti + search_query_abs
+    # print(search_query)
     results_per_iteration = 100
     i = 0
     from_date = datetime.datetime(int(fromdate[:4]), int(fromdate[5:7]), int(fromdate[8:10])) # allow date range; by default it should check the current date

@@ -7,8 +7,7 @@ import re
 import datetime
 
 app = Flask(__name__)
-# app.jinja_env.variable_start_string = '%%'
-# app.jinja_env.variable_end_string = '%%'
+
 
 
 #TODO
@@ -18,14 +17,15 @@ app = Flask(__name__)
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
 
-def fetch_papers(date, search_term): # allow composable search terms
+def fetch_papers(fromdate, todate, search_term): # allow composable search terms
     search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
     results_per_iteration = 100
     i = 0
-    to_date = datetime.datetime(int(date[:4]), int(date[5:7]), int(date[8:10])) # allow date range; by default it should check the current date
-    paper_date = datetime.datetime(int(date[:4]), int(date[5:7]), int(date[8:10]))
+    from_date = datetime.datetime(int(fromdate[:4]), int(fromdate[5:7]), int(fromdate[8:10])) # allow date range; by default it should check the current date
+    to_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
+    paper_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
     papers = []
-    while (paper_date >= to_date):
+    while (paper_date >= from_date):
         url = f"http://export.arxiv.org/api/query?search_query={search_query}&start={i}&max_results={results_per_iteration}&sortBy=submittedDate&sortOrder=descending"
         print(url)
         i += results_per_iteration
@@ -45,7 +45,11 @@ def fetch_papers(date, search_term): # allow composable search terms
 
             categories = ["quant-ph", "cond-mat.quant-gas", "cond-mat.dis-nn"] # make this also determinable in browser
 
-            if date in published.get_text():
+            published_date = published.get_text()
+            paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
+
+            # if date in published.get_text():
+            if from_date <= paper_date and paper_date <= to_date:
                 if any(ele in category for ele in categories):
                     print(category)
                     papers.append({
@@ -58,31 +62,11 @@ def fetch_papers(date, search_term): # allow composable search terms
                         'revised': revised
                     })
 
-        published_date = published.get_text()
-        paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
+        # published_date = published.get_text()
+        # paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
 
     return papers
 
-
-# @app.route('/', methods=['GET', 'POST'])
-# def index():
-#     if request.method == 'POST':
-#         search_term = request.form.get('search_term', '').lower()
-#         print("search_term ", search_term)
-#         today = date.today().strftime('%Y-%m-%d')
-#         papers = fetch_papers(today)
-#         filtered_papers = [paper for paper in papers if search_term in paper['title'].lower() or search_term in paper['summary'].lower()]
-
-#         return render_template('index.html', papers=filtered_papers)
-
-#     return render_template('index.html')
-
-# @app.route('/papers', methods=['POST'])
-# def papers():
-#     date = request.form['date']
-#     search_terms = [term.strip() for term in request.form['search_term'].split(',')]
-#     papers = fetch_papers(date, search_terms)
-#     return render_template('index.html', papers=papers, date=date, search_term=', '.join(search_terms))
 
 
 def highlight_keywords(text, keywords):
@@ -95,35 +79,17 @@ def highlight_keywords(text, keywords):
 
 
 
-    try:
-        # learning,control,network
-        search_term = [term.strip() for term in request.form['search_term'].split(',')] # ['learning', 'control', 'network']
-        date = request.form['date']
-        # today = date.today().strftime('%Y-%m-%d')
-        papers = fetch_papers(date, search_term)
-        # filtered_papers = [paper for paper in papers if search_term in paper['title'].lower() or search_term in paper['summary'].lower()]
-        # return render_template('index.html', papers=papers)
-
-        for paper in papers:
-            paper['title'] = highlight_keywords(paper['title'], search_term)
-            paper['summary'] = highlight_keywords(paper['summary'], search_term)
-
-        return render_template('index.html', papers=papers, search_term=', '.join(search_term)) # learning, control, network
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-
-
 @app.route('/')
 @app.route('/papers', methods=['GET', 'POST'])
 def papers():
     print("hello")
-    date = request.form.get('date', None) or request.args.get('date', None)
+    from_date = request.form.get('from_date', None) or request.args.get('from_date', None)
+    to_date = request.form.get('to_date', None) or request.args.get('to_date', None)
     search_term = request.form.get('search_term', None) or request.args.get('search_term', None)
     print(search_term)
     if date and search_term:
         search_terms = [term.strip() for term in request.form['search_term'].split(',')]
-        papers = fetch_papers(date, search_terms)
+        papers = fetch_papers(from_date, to_date, search_terms)
         print(papers)
         for paper in papers:
             paper['title'] = highlight_keywords(paper['title'], search_terms)

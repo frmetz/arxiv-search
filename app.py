@@ -11,6 +11,7 @@ app = Flask(__name__)
 
 
 #TODO
+# Only search in titles and abstracts
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
@@ -41,7 +42,7 @@ def fetch_papers(fromdate, todate, search_term): # allow composable search terms
             published = entry.find('published')
             revised = entry.find('updated')
 
-            categories = ["quant-ph", "cond-mat.quant-gas", "cond-mat.dis-nn"] # make this also determinable in browser
+            categories = ["quant-ph", "cond-mat.quant-gas", "cond-mat.dis-nn", "cond-mat.other", "cond-mat.stat-mech"] # make this also determinable in browser
 
             published_date = published.get_text()
             paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))

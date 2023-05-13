@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import requests
 from bs4 import BeautifulSoup
-from datetime import date
+from datetime import date, timedelta
 import re
 
 import datetime
@@ -11,8 +11,6 @@ app = Flask(__name__)
 
 
 #TODO
-# allow date range
-# by default it should check for the current (or previous) date
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
@@ -27,7 +25,7 @@ def fetch_papers(fromdate, todate, search_term): # allow composable search terms
     papers = []
     while (paper_date >= from_date):
         url = f"http://export.arxiv.org/api/query?search_query={search_query}&start={i}&max_results={results_per_iteration}&sortBy=submittedDate&sortOrder=descending"
-        print(url)
+        # print(url)
         i += results_per_iteration
 
         response = requests.get(url)
@@ -48,10 +46,9 @@ def fetch_papers(fromdate, todate, search_term): # allow composable search terms
             published_date = published.get_text()
             paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
 
-            # if date in published.get_text():
             if from_date <= paper_date and paper_date <= to_date:
                 if any(ele in category for ele in categories):
-                    print(category)
+                    # print(category)
                     papers.append({
                         'title': title,
                         'summary': summary,
@@ -61,9 +58,6 @@ def fetch_papers(fromdate, todate, search_term): # allow composable search terms
                         'published': published,
                         'revised': revised
                     })
-
-        # published_date = published.get_text()
-        # paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
 
     return papers
 
@@ -82,21 +76,32 @@ def highlight_keywords(text, keywords):
 @app.route('/')
 @app.route('/papers', methods=['GET', 'POST'])
 def papers():
-    print("hello")
     from_date = request.form.get('from_date', None) or request.args.get('from_date', None)
     to_date = request.form.get('to_date', None) or request.args.get('to_date', None)
     search_term = request.form.get('search_term', None) or request.args.get('search_term', None)
-    print(search_term)
-    if date and search_term:
+
+    if from_date is None:
+        today = date.today()
+        day_shift = 2
+        if today.weekday() == 6: # Saturday
+            day_shift = 3
+        elif today.weekday() == 7: # Sunday
+            day_shift = 4
+        elif today.weekday() == 0: # Monday
+            day_shift = 4
+        from_date = (today - timedelta(days = day_shift)).strftime('%Y-%m-%d')
+    if to_date is None:
+        to_date = date.today().strftime('%Y-%m-%d')
+
+    if search_term and from_date and to_date:
         search_terms = [term.strip() for term in request.form['search_term'].split(',')]
         papers = fetch_papers(from_date, to_date, search_terms)
-        print(papers)
         for paper in papers:
             paper['title'] = highlight_keywords(paper['title'], search_terms)
             paper['summary'] = highlight_keywords(paper['summary'], search_terms)
     else:
         papers = []
-    return render_template('index.html', papers=papers, date=date, search_term=search_term)
+    return render_template('index.html', papers=papers, from_date=from_date, to_date=to_date, search_term=search_term)
 
 if __name__ == '__main__':
     app.run(debug=True)

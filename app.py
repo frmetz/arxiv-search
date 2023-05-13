@@ -15,7 +15,7 @@ app = Flask(__name__)
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
 
-def fetch_papers(fromdate, todate, search_term): # allow composable search terms
+def fetch_papers(fromdate, todate, search_term):
     # search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
     search_query_ti = 'ti:' + '+OR+ti:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
     search_query_abs = '+OR+abs:' + '+OR+abs:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
@@ -23,7 +23,7 @@ def fetch_papers(fromdate, todate, search_term): # allow composable search terms
     # print(search_query)
     results_per_iteration = 100
     i = 0
-    from_date = datetime.datetime(int(fromdate[:4]), int(fromdate[5:7]), int(fromdate[8:10])) # allow date range; by default it should check the current date
+    from_date = datetime.datetime(int(fromdate[:4]), int(fromdate[5:7]), int(fromdate[8:10]))
     to_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
     paper_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
     papers = []

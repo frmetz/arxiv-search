@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArXiv Paper Search</title>
+</head>
+<body>
+    <div id="app"> <!-- Wrap your content in a div with the id "app" -->
+        <h1>ArXiv Paper Search</h1>
+        <!-- <form method="post"> -->
+        <form action="/papers" method="post">
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" value="{{ date }}" required>
+            <label for="search_term">Search Terms (comma-separated):</label>
+            <input type="text" id="search_term" name="search_term" value="learning,control,network,variational,battery,backflow,cutting,knitting" required>
+            <!-- <input type="text" id="search_term" name="search_term" value="{{ search_term }}" required> -->
+            <button type="submit">Search</button>
+        </form>
+
+        {% if papers %}
+        <h2>Results</h2>
+        <ul>
+            {% for paper in papers %}
+
+            <li>
+                <a href="{{ paper.link }}" target="_blank">{{ paper.title | safe }}</a>
+                <p>Authors:
+                    {% for author in paper.authors %}
+                        {{ author.name }}{% if author.affiliation %} ({{ author.affiliation }}){% endif %}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+                <p>Abstract: <span>{{ paper.summary | safe }}</span></p>
+                <p>Category: {{ paper.category }}</p>
+                <p>Published: {{ paper.published }}</p>
+            </li>
+
+            
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</body>
+</html>
+  

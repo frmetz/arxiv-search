@@ -11,6 +11,7 @@ app = Flask(__name__)
 
 
 #TODO
+# make it render latex
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff

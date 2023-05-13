@@ -17,7 +17,6 @@ app = Flask(__name__)
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
-# ------>highlighting of search terms
 
 def fetch_papers(date, search_term): # allow composable search terms
     search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])

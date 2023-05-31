@@ -8,34 +8,43 @@ import datetime
 
 app = Flask(__name__)
 
-
+CATEGORIES = ["quant-ph", "cond-mat.quant-gas", "cond-mat.dis-nn", "cond-mat.other", "cond-mat.stat-mech"] # make this also determinable in browser
 
 #TODO
-# make it render latex
 # also search in cross-listings
 # allow categories to be determined as well
 # check whether it's actually doing the right stuff
 
 def fetch_papers(fromdate, todate, search_term):
-    # search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
-    search_query_ti = 'ti:' + '+OR+ti:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
-    search_query_abs = '+OR+abs:' + '+OR+abs:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
-    search_query = search_query_ti + search_query_abs
+    print()
+    print()
+    search_query = '+OR+'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+
+    # search_query_ti = 'ti:' + '+OR+ti:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    # search_query_abs = '+OR+abs:' + '+OR+abs:'.join([f'"{term.replace(" ", "+")}"' for term in search_term])
+    # search_query = search_query_ti + search_query_abs
+    
     # print(search_query)
-    results_per_iteration = 100
+    results_per_iteration = 500
     i = 0
     from_date = datetime.datetime(int(fromdate[:4]), int(fromdate[5:7]), int(fromdate[8:10]))
     to_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
     paper_date = datetime.datetime(int(todate[:4]), int(todate[5:7]), int(todate[8:10]))
     papers = []
+    print("from_date: ", from_date)
+    k = 0 
+    l = 0
     while (paper_date >= from_date):
         url = f"http://export.arxiv.org/api/query?search_query={search_query}&start={i}&max_results={results_per_iteration}&sortBy=submittedDate&sortOrder=descending"
-        # print(url)
-        i += results_per_iteration
+        print(url)
+        # i += results_per_iteration
 
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'html.parser')
         entries = soup.find_all('entry')
+
+        print("number of results ", len(entries))
+        i += len(entries)
 
         for entry in entries:
             title = entry.find('title').text
@@ -46,13 +55,15 @@ def fetch_papers(fromdate, todate, search_term):
             published = entry.find('published')
             revised = entry.find('updated')
 
-            categories = ["quant-ph", "cond-mat.quant-gas", "cond-mat.dis-nn", "cond-mat.other", "cond-mat.stat-mech"] # make this also determinable in browser
-
             published_date = published.get_text()
             paper_date = datetime.datetime(int(published_date[:4]), int(published_date[5:7]), int(published_date[8:10]))
 
+            # print("paper_date: ", paper_date)
             if from_date <= paper_date and paper_date <= to_date:
-                if any(ele in category for ele in categories):
+                k += 1
+                # print("yes")
+                if any(ele in category for ele in CATEGORIES):
+                    l += 1
                     # print(category)
                     papers.append({
                         'title': title,
@@ -63,6 +74,8 @@ def fetch_papers(fromdate, todate, search_term):
                         'published': published,
                         'revised': revised
                     })
+    print("number of correct dates: ", k)
+    print("number of correct cates: ", l)
 
     return papers
 
@@ -100,6 +113,7 @@ def papers():
 
     if search_term and from_date and to_date:
         search_terms = [term.strip() for term in request.form['search_term'].split(',')]
+        papers = fetch_papers(from_date, to_date, search_terms)
         papers = fetch_papers(from_date, to_date, search_terms)
         for paper in papers:
             paper['title'] = highlight_keywords(paper['title'], search_terms)
